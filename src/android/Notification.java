@@ -39,6 +39,8 @@ import android.net.Uri;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 
 /**
  * This class provides access to notifications on the device.
@@ -51,6 +53,8 @@ import android.widget.TextView;
 public class Notification extends CordovaPlugin {
 
     private static final String LOG_TAG = "Notification";
+    private AlertDialog alertbox = null;
+    private ArrayList<AlertDialog> alertboxes = new ArrayList<AlertDialog>();
     
     public int confirmResult = -1;
     public ProgressDialog spinnerDialog = null;
@@ -108,6 +112,12 @@ public class Notification extends CordovaPlugin {
         }
         else if (action.equals("progressStop")) {
             this.progressStop();
+        }
+        else if (action.equals("dismissPrevious")) {
+            this.dismissPrevious();
+        }
+        else if (action.equals("dismissAll")) {
+            this.dismissAll();
         }
         else {
             return false;
@@ -479,7 +489,27 @@ public class Notification extends CordovaPlugin {
             this.progressDialog = null;
         }
     }
-    
+
+    /**
+     * Close previously opened dialog
+     */
+    public synchronized void dismissPrevious(){
+        if(alertbox != null){
+            alertbox.dismiss();
+            alertbox = null;
+        }
+    }
+
+    /**
+     * Close any open dialog.
+     */
+    public synchronized void dismissAll(){
+        for(AlertDialog dialog: alertboxes){
+            dialog.dismiss();
+        }
+        alertboxes = new ArrayList<AlertDialog>();
+    }
+
     @SuppressLint("NewApi")
     private AlertDialog.Builder createDialog(CordovaInterface cordova) {
         int currentapiVersion = android.os.Build.VERSION.SDK_INT;
@@ -503,10 +533,11 @@ public class Notification extends CordovaPlugin {
     @SuppressLint("NewApi")
     private void changeTextDirection(Builder dlg){
         int currentapiVersion = android.os.Build.VERSION.SDK_INT;
-        dlg.create();
-        AlertDialog dialog =  dlg.show();
+        alertbox = dlg.create();
+        alertbox.show();
+        alertboxes.add(alertbox);
         if (currentapiVersion >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            TextView messageview = (TextView)dialog.findViewById(android.R.id.message);
+            TextView messageview = (TextView)alertbox.findViewById(android.R.id.message);
             messageview.setTextDirection(android.view.View.TEXT_DIRECTION_LOCALE);
         }
     }
